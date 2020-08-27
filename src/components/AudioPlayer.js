@@ -1,15 +1,23 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import Peaks from 'peaks.js';
 import { options } from './options';
-
+import Slider from 'rc-slider';
+import 'rc-slider/assets/index.css';
+import {formatTime} from './Utils';
 // import sampleJSON from './sample.json';
 // import sampleOgg from './sample.ogg';
+
+
 
 const AudioPlayer = () => {
   const audioRef = useRef(null)
   const overviewRef = useRef(null)
   const zoomviewRef = useRef(null)
-
+  const [currentTime,setCurrentTime] = useState(0);
+  const [toatlTime,setTotalTime] = useState(0);
+  const [isPlaying,setIsPlaying] = useState(false);
+  const [volume,setVolume] = useState(1);
+  const instance = useRef(null);
   /** Peak.js */
   // const AudioContext = window.AudioContext || window.webkitAudioContext;
   // const audioContext = new AudioContext();
@@ -37,8 +45,47 @@ const AudioPlayer = () => {
       }
 
       console.log('Current Time: ', peaks.player.getCurrentTime());
+      instance.current = peaks;
+      setTotalTime(instance.current.player.getDuration());
+      console.log("innss",instance.current,peaks.player);
+      (instance.current).on('player.timeupdate',function(time){
+        setCurrentTime(time);
+      })
     });
   }, [options])
+
+  const tooglePlaying = ()=>{
+    if(!instance.current){
+      return;
+    }
+    const {player} = instance.current;
+    if(player.isPlaying()){
+      player.pause();
+      setIsPlaying(false);
+    }else{
+      player.play();
+      setIsPlaying(true);
+    }
+  }
+  const playForward = ()=>{
+    if(!!instance.current){
+      const {player} = instance.current;
+      player.seek(player.getCurrentTime()+5);
+    }
+  }
+  const playBackword = ()=>{
+    if(!!instance.current){
+      const {player} = instance.current;
+      player.seek(player.getCurrentTime()-5);
+    }
+  }
+  const handleVolume =(range)=>{
+    console.log(range);
+    if(!!audioRef.current){
+      audioRef.current.volume=range/100;
+    }
+  }
+  
 
   /** Peak.js */
 
@@ -54,11 +101,8 @@ const AudioPlayer = () => {
           <source src="sample.mp3" type="audio/mpeg" />
           <source src="sample.ogg" type="audio/ogg" />
         </audio>
-        <script
-          src="../../node_modules/requirejs/require.js"
-          data-main="app.js"
-        ></script>
 
+        
         {/* <div id="controls">
           <button data-action="zoom-in">Zoom in</button>
           <button data-action="zoom-out">Zoom out</button>
@@ -77,6 +121,13 @@ const AudioPlayer = () => {
           <button data-action="destroy">Destroy</button>
         </div> */}
       </div>
+      <div>
+      <span>{formatTime(currentTime)}/{formatTime(toatlTime)}</span>
+      <button onClick={playBackword}>{'<'}</button>
+      <button onClick={tooglePlaying}>{isPlaying ? "Pause" : "Play"} </button>
+      <button onClick={playForward}>{'>'}</button>
+      <div style={{width:'100px',display:"inline-block",marginLeft:"10px"}}><Slider width={20} onChange={handleVolume} defaultValue={100} ></Slider></div>
+      </div> 
     </div>
   );
 };
